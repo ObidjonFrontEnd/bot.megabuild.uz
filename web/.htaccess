@@ -1,0 +1,9 @@
+# Красивые URL для Apache (Yii2). Нужен включённый mod_rewrite.
+# Корень сайта (DocumentRoot) должен указывать на эту папку web/.
+RewriteEngine On
+
+# Реальные файлы и папки отдаём как есть
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+# Всё остальное — на index.php
+RewriteRule . index.php

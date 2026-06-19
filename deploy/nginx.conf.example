@@ -1,0 +1,52 @@
+# ==========================================================================
+#  Пример конфига Nginx для бота (БЕЗ Docker).
+#  1) Замените bot.ваш-домен.uz на свой домен.
+#  2) Замените /путь/к/bot на реальный путь, куда склонировали проект.
+#  3) Проверьте версию php-fpm в строке fastcgi_pass (php8.2-fpm / php8.3-fpm).
+#  4) Скопируйте в /etc/nginx/sites-available/ и включите ссылкой в sites-enabled.
+#  SSL проще всего выдать через certbot (Let's Encrypt).
+# ==========================================================================
+
+server {
+    listen 80;
+    server_name bot.ваш-домен.uz;
+
+    # ВАЖНО: корень — это папка web/ внутри проекта, не корень проекта.
+    root /путь/к/bot/web;
+    index index.php;
+
+    access_log /var/log/nginx/bot.access.log;
+    error_log  /var/log/nginx/bot.error.log;
+
+    # Прокси к API основного Yii2-сервера.
+    # Mini App шлёт HTTPS-запросы на адрес бота /api/, nginx пересылает их на Yii2.
+    # Решает Mixed Content + CORS. Замените адрес на реальный сервер Yii2.
+    location /api/ {
+        proxy_pass         http://46.62.246.156/api/;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+    }
+
+    # Yii2 «красивые» URL: /webhook, /incoming, /mini-app/* и т.д.
+    location / {
+        try_files $uri /index.php?$args;
+    }
+
+    location ~ \.php$ {
+        # Проверьте путь к сокету: ls /run/php/
+        fastcgi_pass   unix:/run/php/php8.2-fpm.sock;
+        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+        fastcgi_param  PATH_INFO $fastcgi_path_info;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+    }
+
+    # Запретить доступ к служебным файлам
+    location ~ /\.(env|git) { deny all; }
+    location ^~ /data/      { deny all; }
+    location ^~ /runtime/   { deny all; }
+}

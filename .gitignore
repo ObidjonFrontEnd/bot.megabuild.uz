@@ -1,0 +1,16 @@
+# Зависимости (ставятся командой composer install на сервере)
+/vendor/
+
+# Секреты — НИКОГДА не коммитить (тут токен бота и пароли)
+.env
+
+# Локальная база и кэш бота
+/data/*.sqlite
+/data/*.sqlite-journal
+/runtime/cache/
+/runtime/logs/
+/runtime/*.log
+
+# Системный мусор
+.DS_Store
+Thumbs.db
